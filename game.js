@@ -33,6 +33,9 @@ class Tetris {
         this.dropCounter = 0;
         this.lastTime = 0;
         
+        this.moveInterval = null; // 用于存储持续移动的定时器
+        this.moveSpeed = 50; // 持续移动的间隔时间（毫秒）
+        
         this.bindControls();
         this.loadLeaderboard();
         this.newShape();
@@ -40,8 +43,30 @@ class Tetris {
     }
     
     bindControls() {
-        document.getElementById('leftBtn').addEventListener('click', () => this.moveLeft());
-        document.getElementById('rightBtn').addEventListener('click', () => this.moveRight());
+        // 左按钮的触摸事件
+        const leftBtn = document.getElementById('leftBtn');
+        leftBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.startMoving('left');
+        });
+        leftBtn.addEventListener('touchend', () => this.stopMoving());
+        leftBtn.addEventListener('touchcancel', () => this.stopMoving());
+        
+        // 右按钮的触摸事件
+        const rightBtn = document.getElementById('rightBtn');
+        rightBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.startMoving('right');
+        });
+        rightBtn.addEventListener('touchend', () => this.stopMoving());
+        rightBtn.addEventListener('touchcancel', () => this.stopMoving());
+        
+        // 鼠标事件（用于电脑端）
+        leftBtn.addEventListener('mousedown', () => this.startMoving('left'));
+        rightBtn.addEventListener('mousedown', () => this.startMoving('right'));
+        document.addEventListener('mouseup', () => this.stopMoving());
+        
+        // 其他按钮保持单击事件
         document.getElementById('rotateBtn').addEventListener('click', () => this.rotate());
         document.getElementById('dropBtn').addEventListener('click', () => this.moveDown());
         document.getElementById('restartBtn').addEventListener('click', () => this.restart());
@@ -52,12 +77,16 @@ class Tetris {
         // 键盘控制
         document.addEventListener('keydown', (e) => {
             if (this.gameOver) return;
+            
+            // 如果已经在移动，不要重复开始
+            if (this.moveInterval) return;
+            
             switch(e.key) {
                 case 'ArrowLeft':
-                    this.moveLeft();
+                    this.startMoving('left');
                     break;
                 case 'ArrowRight':
-                    this.moveRight();
+                    this.startMoving('right');
                     break;
                 case 'ArrowUp':
                     this.rotate();
@@ -67,6 +96,43 @@ class Tetris {
                     break;
             }
         });
+        
+        // 键盘松开停止移动
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                this.stopMoving();
+            }
+        });
+    }
+    
+    startMoving(direction) {
+        if (this.gameOver) return;
+        
+        // 先立即移动一次
+        if (direction === 'left') {
+            this.moveLeft();
+        } else if (direction === 'right') {
+            this.moveRight();
+        }
+        
+        // 清除可能存在的之前的定时器
+        this.stopMoving();
+        
+        // 设置持续移动
+        this.moveInterval = setInterval(() => {
+            if (direction === 'left') {
+                this.moveLeft();
+            } else if (direction === 'right') {
+                this.moveRight();
+            }
+        }, this.moveSpeed);
+    }
+    
+    stopMoving() {
+        if (this.moveInterval) {
+            clearInterval(this.moveInterval);
+            this.moveInterval = null;
+        }
     }
     
     showLeaderboard() {
@@ -285,6 +351,7 @@ class Tetris {
     }
     
     restart() {
+        this.stopMoving();
         this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
         this.score = 0;
         this.level = 1;
