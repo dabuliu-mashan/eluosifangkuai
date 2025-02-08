@@ -8,8 +8,21 @@ class Tetris {
         this.canvas.width = this.blockSize * this.cols;
         this.canvas.height = this.blockSize * this.rows;
         
+        // 创建预览画布
+        this.previewCanvas = document.createElement('canvas');
+        this.previewCanvas.id = 'previewCanvas';
+        this.previewBlockSize = 25; // 预览区块大小改为25px
+        this.previewCanvas.width = this.previewBlockSize * 4;
+        this.previewCanvas.height = this.previewBlockSize * 4;
+        this.previewCtx = this.previewCanvas.getContext('2d');
+        
+        // 将预览画布添加到预览容器
+        document.getElementById('previewContainer').appendChild(this.previewCanvas);
+        
         this.score = 0;
+        this.maxScore = 999999;  // 设置最大分数为999,999
         this.level = 1;
+        this.maxLevel = 99;      // 设置最大等级为99
         this.gameOver = false;
         this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
         
@@ -29,35 +42,90 @@ class Tetris {
         this.currentX = 0;
         this.currentY = 0;
         
-        this.dropInterval = 1000;
+        // 添加下一个方块的属性
+        this.nextShape = null;
+        this.nextColor = null;
+        
+        // 调整移动速度（降低15%）
+        this.moveSpeed = 70; // 从60ms增加到70ms
+        this.downSpeed = 40; // 从35ms增加到40ms
+        
+        // 自动下落速度系统
+        this.baseDropInterval = 1000; // 基础下落间隔
+        this.minDropInterval = 100;   // 最小下落间隔
+        this.dropInterval = this.baseDropInterval;
         this.dropCounter = 0;
         this.lastTime = 0;
         
-        this.moveInterval = null; // 用于存储持续移动的定时器
-        this.moveSpeed = 60; // 持续移动的间隔时间（从50ms增加到60ms）
-        this.downSpeed = 35; // 向下移动的间隔时间（从30ms增加到35ms）
+        this.moveInterval = null;
         
-        // 更新音效系统，使用在线音效资源
+        // 优化音效系统
+        this.audioContext = null;
+        this.soundEnabled = true;
+        this.soundBuffers = {};
+        
+        try {
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.audioContext = new AudioContext();
+            
+            // 确保音频上下文在页面加载时是运行状态
+            if (this.audioContext.state === 'suspended') {
+                this.audioContext.resume();
+            }
+            
+            // 监听页面可见性变化
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    this.audioContext?.suspend();
+                } else if (this.soundEnabled) {
+                    this.audioContext?.resume();
+                }
+            });
+            
+            // 添加触摸事件监听，以确保在移动设备上可以播放声音
+            document.addEventListener('touchstart', () => {
+                if (this.audioContext?.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+            }, { once: true });
+            
+        } catch (e) {
+            console.log('Web Audio API不支持');
+        }
+
         this.sounds = {
-            move: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'),
-            rotate: new Audio('https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3'),
-            drop: new Audio('https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3'),
-            clear: new Audio('https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3'),
-            gameOver: new Audio('https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3')
+            move: new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAEAAABVgANTU1NTU1Q0NDQ0NDUFBQUFBQXl5eXl5ea2tra2tra3l5eXl5eYaGhoaGhpSUlJSUlKGhoaGhoaGvr6+vr6+8vLy8vLzKysrKysrX19fX19fX5eXl5eXl8vLy8vLy////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCgAAAAAAAAAVY82AhbwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/+MYxAALACwAAP/AADwQKVE9YWDGPkQWpT66yk4+zIiYPoTUaT3tnU+NFxkYmC4T/f+g4NDFY8T1/GNYxb/ZYs5jF8Y5j/+MYxA8L0DU0A/+AACZNG5/2Z+zzXzRD/51h6P4hGAGKDGQGJpJbZ6w8rx/H8X1TRP5p5PvX/Pc//f1TdwlACApwgDf/+MYxBoK4DVpQP8iAtYYjKhhiGhkHoYHQkxkQwxMxhiGhkHoYHQuxAAAAA0ATuc4EQwBoAL4AFwABQABEQAAA0AE/+MYxB4LGDVMAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB'),
+            rotate: new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAEAAABVgANTU1NTU1Q0NDQ0NDUFBQUFBQXl5eXl5ea2tra2tra3l5eXl5eYaGhoaGhpSUlJSUlKGhoaGhoaGvr6+vr6+8vLy8vLzKysrKysrX19fX19fX5eXl5eXl8vLy8vLy////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCgAAAAAAAAAVY82AhbwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/+MYxAALACwAAP/AADwQKVE9YWDGPkQWpT66yk4+zIiYPoTUaT3tnU+NFxkYmC4T/f+g4NDFY8T1/GNYxb/ZYs5jF8Y5j/+MYxA8L0DU0A/+AACZNG5/2Z+zzXzRD/51h6P4hGAGKDGQGJpJbZ6w8rx/H8X1TRP5p5PvX/Pc//f1TdwlACApwgDf/+MYxBoK4DVpQP8iAtYYjKhhiGhkHoYHQkxkQwxMxhiGhkHoYHQuxAAAAA0ATuc4EQwBoAL4AFwABQABEQAAA0AE/+MYxB4LGDVMAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB'),
+            drop: new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAEAAABVgANTU1NTU1Q0NDQ0NDUFBQUFBQXl5eXl5ea2tra2tra3l5eXl5eYaGhoaGhpSUlJSUlKGhoaGhoaGvr6+vr6+8vLy8vLzKysrKysrX19fX19fX5eXl5eXl8vLy8vLy////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCgAAAAAAAAAVY82AhbwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/+MYxAALACwAAP/AADwQKVE9YWDGPkQWpT66yk4+zIiYPoTUaT3tnU+NFxkYmC4T/f+g4NDFY8T1/GNYxb/ZYs5jF8Y5j/+MYxA8L0DU0A/+AACZNG5/2Z+zzXzRD/51h6P4hGAGKDGQGJpJbZ6w8rx/H8X1TRP5p5PvX/Pc//f1TdwlACApwgDf/+MYxBoK4DVpQP8iAtYYjKhhiGhkHoYHQkxkQwxMxhiGhkHoYHQuxAAAAA0ATuc4EQwBoAL4AFwABQABEQAAA0AE/+MYxB4LGDVMAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB'),
+            clear: new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAEAAABVgANTU1NTU1Q0NDQ0NDUFBQUFBQXl5eXl5ea2tra2tra3l5eXl5eYaGhoaGhpSUlJSUlKGhoaGhoaGvr6+vr6+8vLy8vLzKysrKysrX19fX19fX5eXl5eXl8vLy8vLy////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCgAAAAAAAAAVY82AhbwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/+MYxAALACwAAP/AADwQKVE9YWDGPkQWpT66yk4+zIiYPoTUaT3tnU+NFxkYmC4T/f+g4NDFY8T1/GNYxb/ZYs5jF8Y5j/+MYxA8L0DU0A/+AACZNG5/2Z+zzXzRD/51h6P4hGAGKDGQGJpJbZ6w8rx/H8X1TRP5p5PvX/Pc//f1TdwlACApwgDf/+MYxBoK4DVpQP8iAtYYjKhhiGhkHoYHQkxkQwxMxhiGhkHoYHQuxAAAAA0ATuc4EQwBoAL4AFwABQABEQAAA0AE/+MYxB4LGDVMAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB'),
+            gameOver: new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAEAAABVgANTU1NTU1Q0NDQ0NDUFBQUFBQXl5eXl5ea2tra2tra3l5eXl5eYaGhoaGhpSUlJSUlKGhoaGhoaGvr6+vr6+8vLy8vLzKysrKysrX19fX19fX5eXl5eXl8vLy8vLy////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCgAAAAAAAAAVY82AhbwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/+MYxAALACwAAP/AADwQKVE9YWDGPkQWpT66yk4+zIiYPoTUaT3tnU+NFxkYmC4T/f+g4NDFY8T1/GNYxb/ZYs5jF8Y5j/+MYxA8L0DU0A/+AACZNG5/2Z+zzXzRD/51h6P4hGAGKDGQGJpJbZ6w8rx/H8X1TRP5p5PvX/Pc//f1TdwlACApwgDf/+MYxBoK4DVpQP8iAtYYjKhhiGhkHoYHQkxkQwxMxhiGhkHoYHQuxAAAAA0ATuc4EQwBoAL4AFwABQABEQAAA0AE/+MYxB4LGDVMAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB')
         };
 
-        // 预加载所有音效
-        Object.values(this.sounds).forEach(sound => {
-            sound.load();
-            sound.volume = 0.3; // 设置音量为30%
-        });
+        // 添加音效开关按钮
+        const soundBtn = document.createElement('button');
+        soundBtn.id = 'soundBtn';
+        soundBtn.className = 'round-btn';
+        soundBtn.innerHTML = '🔊';
+        soundBtn.style.backgroundColor = '#2196F3';
+        document.querySelector('.controls').appendChild(soundBtn);
         
-        // 音效开关状态
-        this.soundEnabled = true;
+        // 绑定音效开关事件
+        soundBtn.addEventListener('click', () => {
+            this.soundEnabled = !this.soundEnabled;
+            soundBtn.innerHTML = this.soundEnabled ? '🔊' : '🔇';
+            
+            if (this.soundEnabled && this.audioContext?.state === 'suspended') {
+                this.audioContext.resume();
+            }
+        });
+
+        // 添加消除行数统计
+        this.linesCleared = 0;
         
         this.bindControls();
         this.loadLeaderboard();
-        this.newShape();
+        this.generateNextShape(); // 生成第一个预览方块
+        this.newShape();         // 生成当前方块
         this.update();
     }
     
@@ -161,40 +229,6 @@ class Tetris {
                 this.stopMoving();
             }
         });
-        
-        // 更新音效开关按钮样式和功能
-        const soundBtn = document.createElement('button');
-        soundBtn.id = 'soundBtn';
-        soundBtn.className = 'sound-btn';
-        soundBtn.innerHTML = '🔊';
-        soundBtn.style.position = 'absolute';
-        soundBtn.style.top = '10px';
-        soundBtn.style.right = '10px'; // 改为右上角
-        soundBtn.style.padding = '8px';
-        soundBtn.style.fontSize = '24px';
-        soundBtn.style.backgroundColor = 'rgba(76, 175, 80, 0.8)';
-        soundBtn.style.color = 'white';
-        soundBtn.style.border = 'none';
-        soundBtn.style.borderRadius = '50%';
-        soundBtn.style.cursor = 'pointer';
-        soundBtn.style.width = '40px';
-        soundBtn.style.height = '40px';
-        soundBtn.style.display = 'flex';
-        soundBtn.style.justifyContent = 'center';
-        soundBtn.style.alignItems = 'center';
-        soundBtn.style.zIndex = '100';
-        soundBtn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-        
-        document.querySelector('.game-container').appendChild(soundBtn);
-        
-        soundBtn.addEventListener('click', () => {
-            this.soundEnabled = !this.soundEnabled;
-            soundBtn.innerHTML = this.soundEnabled ? '🔊' : '🔇';
-            // 播放测试音效
-            if (this.soundEnabled) {
-                this.playSound('move');
-            }
-        });
     }
     
     startMoving(direction) {
@@ -256,24 +290,71 @@ class Tetris {
     }
     
     updateScore(lines) {
-        const points = [40, 100, 300, 1200]; // 消行基础分数
-        this.score += points[lines - 1] * this.level;
-        document.getElementById('score').textContent = this.score;
+        const points = [40, 100, 300, 1200]; // 基础消行分数
+        const newScore = Math.min(
+            this.maxScore,
+            this.score + points[lines - 1] * this.level
+        );
+        this.score = newScore;
+        document.getElementById('score').textContent = this.score.toLocaleString();
         
-        // 自动升级
-        if (this.score > this.level * 1000) {
-            this.level++;
+        // 更新等级和下落速度
+        if (this.score > this.level * 1000 && this.level < this.maxLevel) {
+            this.level = Math.min(this.maxLevel, this.level + 1);
             document.getElementById('level').textContent = this.level;
-            this.dropInterval = Math.max(100, 1000 - (this.level - 1) * 50);
+            
+            // 计算新的下落速度，使用对数函数使速度增长逐渐放缓
+            const speedFactor = Math.log10(this.level + 9); // +9确保从1级开始就有合理的加速
+            this.dropInterval = Math.max(
+                this.minDropInterval,
+                this.baseDropInterval - (speedFactor * 100)
+            );
+        }
+    }
+    
+    generateNextShape() {
+        const randomIndex = Math.floor(Math.random() * this.shapes.length);
+        this.nextShape = this.shapes[randomIndex];
+        this.nextColor = this.colors[randomIndex];
+        this.drawPreview();
+    }
+    
+    drawPreview() {
+        this.previewCtx.fillStyle = '#000';
+        this.previewCtx.fillRect(0, 0, this.previewCanvas.width, this.previewCanvas.height);
+        
+        if (this.nextShape) {
+            const offsetX = (4 - this.nextShape[0].length) * this.previewBlockSize / 2;
+            const offsetY = (4 - this.nextShape.length) * this.previewBlockSize / 2;
+            
+            for (let y = 0; y < this.nextShape.length; y++) {
+                for (let x = 0; x < this.nextShape[y].length; x++) {
+                    if (this.nextShape[y][x]) {
+                        this.previewCtx.fillStyle = this.nextColor;
+                        this.previewCtx.fillRect(
+                            offsetX + x * this.previewBlockSize,
+                            offsetY + y * this.previewBlockSize,
+                            this.previewBlockSize - 1,
+                            this.previewBlockSize - 1
+                        );
+                    }
+                }
+            }
         }
     }
     
     newShape() {
-        const randomIndex = Math.floor(Math.random() * this.shapes.length);
-        this.currentShape = this.shapes[randomIndex];
-        this.currentColor = this.colors[randomIndex];
+        if (this.nextShape === null) {
+            this.generateNextShape();
+        }
+        
+        this.currentShape = this.nextShape;
+        this.currentColor = this.nextColor;
         this.currentX = Math.floor((this.cols - this.currentShape[0].length) / 2);
         this.currentY = 0;
+        
+        // 生成下一个预览方块
+        this.generateNextShape();
         
         if (this.collision()) {
             this.gameOver = true;
@@ -364,6 +445,8 @@ class Tetris {
         }
         
         if (linesCleared > 0) {
+            this.linesCleared += linesCleared; // 更新总消除行数
+            document.getElementById('lines').textContent = this.linesCleared;
             this.playSound('clear');
             this.updateScore(linesCleared);
         }
@@ -395,8 +478,34 @@ class Tetris {
     }
     
     drawBlock(x, y, color) {
+        const blockSize = this.blockSize;
+        const borderRadius = 4;  // 圆角大小
+        
+        // 绘制主体方块（带圆角）
         this.ctx.fillStyle = color;
-        this.ctx.fillRect(x * this.blockSize, y * this.blockSize, this.blockSize - 1, this.blockSize - 1);
+        this.ctx.beginPath();
+        this.ctx.moveTo(x * blockSize + borderRadius, y * blockSize);
+        this.ctx.lineTo(x * blockSize + blockSize - borderRadius - 1, y * blockSize);
+        this.ctx.quadraticCurveTo(x * blockSize + blockSize - 1, y * blockSize, x * blockSize + blockSize - 1, y * blockSize + borderRadius);
+        this.ctx.lineTo(x * blockSize + blockSize - 1, y * blockSize + blockSize - borderRadius - 1);
+        this.ctx.quadraticCurveTo(x * blockSize + blockSize - 1, y * blockSize + blockSize - 1, x * blockSize + blockSize - borderRadius - 1, y * blockSize + blockSize - 1);
+        this.ctx.lineTo(x * blockSize + borderRadius, y * blockSize + blockSize - 1);
+        this.ctx.quadraticCurveTo(x * blockSize, y * blockSize + blockSize - 1, x * blockSize, y * blockSize + blockSize - borderRadius - 1);
+        this.ctx.lineTo(x * blockSize, y * blockSize + borderRadius);
+        this.ctx.quadraticCurveTo(x * blockSize, y * blockSize, x * blockSize + borderRadius, y * blockSize);
+        this.ctx.fill();
+        
+        // 添加高光效果
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        this.ctx.beginPath();
+        this.ctx.moveTo(x * blockSize + borderRadius, y * blockSize);
+        this.ctx.lineTo(x * blockSize + blockSize - borderRadius - 1, y * blockSize);
+        this.ctx.quadraticCurveTo(x * blockSize + blockSize - 1, y * blockSize, x * blockSize + blockSize - 1, y * blockSize + borderRadius);
+        this.ctx.lineTo(x * blockSize + blockSize - 1, y * blockSize + blockSize * 0.3);
+        this.ctx.lineTo(x * blockSize, y * blockSize + blockSize * 0.3);
+        this.ctx.lineTo(x * blockSize, y * blockSize + borderRadius);
+        this.ctx.quadraticCurveTo(x * blockSize, y * blockSize, x * blockSize + borderRadius, y * blockSize);
+        this.ctx.fill();
     }
     
     update(time = 0) {
@@ -444,6 +553,8 @@ class Tetris {
         leaderboard.push({
             name: playerName,
             score: this.score,
+            level: this.level,
+            lines: this.linesCleared,
             date: new Date().toISOString()
         });
 
@@ -461,34 +572,55 @@ class Tetris {
         this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
         this.score = 0;
         this.level = 1;
+        this.linesCleared = 0; // 重置消除行数
         this.gameOver = false;
-        this.dropInterval = 1000;
+        this.dropInterval = this.baseDropInterval;
         document.getElementById('score').textContent = '0';
         document.getElementById('level').textContent = '1';
+        document.getElementById('lines').textContent = '0'; // 更新消除行数显示
         document.getElementById('saveScoreBtn').disabled = false;
         document.getElementById('playerName').value = '';
         document.querySelector('.game-over').classList.add('hidden');
+        this.generateNextShape();
         this.newShape();
         this.update();
     }
     
-    // 修改播放音效的方法，添加错误处理和音量控制
+    // 修改播放音效的方法
     playSound(soundName) {
-        if (this.soundEnabled && this.sounds[soundName]) {
-            try {
-                const sound = this.sounds[soundName];
-                sound.currentTime = 0;
-                sound.volume = 0.3; // 确保每次播放时音量都是30%
-                
-                const playPromise = sound.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        console.log('音效播放失败:', error);
-                    });
-                }
-            } catch (error) {
-                console.log('音效系统错误:', error);
+        if (!this.soundEnabled || !this.sounds[soundName] || !this.audioContext) return;
+        
+        try {
+            const sound = this.sounds[soundName];
+            
+            // 如果音频上下文被暂停，尝试恢复
+            if (this.audioContext.state === 'suspended') {
+                this.audioContext.resume().then(() => {
+                    this.playSoundWithRetry(sound);
+                });
+            } else {
+                this.playSoundWithRetry(sound);
             }
+        } catch (error) {
+            console.log('音效播放失败:', error);
+        }
+    }
+
+    playSoundWithRetry(sound, retryCount = 0) {
+        if (retryCount >= 3) return; // 最多重试3次
+        
+        sound.currentTime = 0;
+        const playPromise = sound.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log('音效播放错误，尝试重试:', error);
+                if (error.name === 'NotAllowedError' && retryCount < 3) {
+                    setTimeout(() => {
+                        this.playSoundWithRetry(sound, retryCount + 1);
+                    }, 100);
+                }
+            });
         }
     }
 

@@ -9,14 +9,32 @@
 <body>
     <div class="game-wrapper">
         <div class="game-container">
-            <div class="header">
-                <div class="score-container">
-                    <div class="score">分数: <span id="score">0</span></div>
-                    <div class="level">等级: <span id="level">1</span></div>
-                    <button id="rankBtn" class="rank-btn">排行榜</button>
+            <div class="game-content">
+                <div class="game-main">
+                    <canvas id="gameCanvas"></canvas>
+                </div>
+                <div class="game-info">
+                    <div class="info-section">
+                        <div class="info-item">
+                            <label>得分</label>
+                            <span id="score">0</span>
+                        </div>
+                        <div class="info-item">
+                            <label>消除行</label>
+                            <span id="lines">0</span>
+                        </div>
+                        <div class="info-item">
+                            <label>级别</label>
+                            <span id="level">1</span>
+                        </div>
+                        <div class="preview-section">
+                            <div class="section-title">下一个</div>
+                            <div id="previewContainer"></div>
+                        </div>
+                        <button id="rankBtn" class="rank-btn">排行榜</button>
+                    </div>
                 </div>
             </div>
-            <canvas id="gameCanvas"></canvas>
             <div class="controls">
                 <button id="leftBtn" class="round-btn">←</button>
                 <button id="dropBtn" class="round-btn">↓</button>
