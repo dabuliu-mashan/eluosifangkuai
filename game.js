@@ -37,6 +37,24 @@ class Tetris {
         this.moveSpeed = 60; // 持续移动的间隔时间（从50ms增加到60ms）
         this.downSpeed = 35; // 向下移动的间隔时间（从30ms增加到35ms）
         
+        // 更新音效系统，使用在线音效资源
+        this.sounds = {
+            move: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'),
+            rotate: new Audio('https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3'),
+            drop: new Audio('https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3'),
+            clear: new Audio('https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3'),
+            gameOver: new Audio('https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3')
+        };
+
+        // 预加载所有音效
+        Object.values(this.sounds).forEach(sound => {
+            sound.load();
+            sound.volume = 0.3; // 设置音量为30%
+        });
+        
+        // 音效开关状态
+        this.soundEnabled = true;
+        
         this.bindControls();
         this.loadLeaderboard();
         this.newShape();
@@ -143,6 +161,40 @@ class Tetris {
                 this.stopMoving();
             }
         });
+        
+        // 更新音效开关按钮样式和功能
+        const soundBtn = document.createElement('button');
+        soundBtn.id = 'soundBtn';
+        soundBtn.className = 'sound-btn';
+        soundBtn.innerHTML = '🔊';
+        soundBtn.style.position = 'absolute';
+        soundBtn.style.top = '10px';
+        soundBtn.style.right = '10px'; // 改为右上角
+        soundBtn.style.padding = '8px';
+        soundBtn.style.fontSize = '24px';
+        soundBtn.style.backgroundColor = 'rgba(76, 175, 80, 0.8)';
+        soundBtn.style.color = 'white';
+        soundBtn.style.border = 'none';
+        soundBtn.style.borderRadius = '50%';
+        soundBtn.style.cursor = 'pointer';
+        soundBtn.style.width = '40px';
+        soundBtn.style.height = '40px';
+        soundBtn.style.display = 'flex';
+        soundBtn.style.justifyContent = 'center';
+        soundBtn.style.alignItems = 'center';
+        soundBtn.style.zIndex = '100';
+        soundBtn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+        
+        document.querySelector('.game-container').appendChild(soundBtn);
+        
+        soundBtn.addEventListener('click', () => {
+            this.soundEnabled = !this.soundEnabled;
+            soundBtn.innerHTML = this.soundEnabled ? '🔊' : '🔇';
+            // 播放测试音效
+            if (this.soundEnabled) {
+                this.playSound('move');
+            }
+        });
     }
     
     startMoving(direction) {
@@ -225,6 +277,7 @@ class Tetris {
         
         if (this.collision()) {
             this.gameOver = true;
+            this.playSound('gameOver');
             document.querySelector('.game-over').classList.remove('hidden');
             document.getElementById('finalScore').textContent = this.score;
         }
@@ -259,6 +312,8 @@ class Tetris {
         this.currentX--;
         if (this.collision()) {
             this.currentX++;
+        } else {
+            this.playSound('move');
         }
     }
     
@@ -266,6 +321,8 @@ class Tetris {
         this.currentX++;
         if (this.collision()) {
             this.currentX--;
+        } else {
+            this.playSound('move');
         }
     }
     
@@ -274,6 +331,7 @@ class Tetris {
         if (this.collision()) {
             this.currentY--;
             this.merge();
+            this.playSound('drop');
             this.clearLines();
             this.newShape();
         }
@@ -288,6 +346,8 @@ class Tetris {
         
         if (this.collision()) {
             this.currentShape = previousShape;
+        } else {
+            this.playSound('rotate');
         }
     }
     
@@ -304,6 +364,7 @@ class Tetris {
         }
         
         if (linesCleared > 0) {
+            this.playSound('clear');
             this.updateScore(linesCleared);
         }
     }
@@ -409,6 +470,34 @@ class Tetris {
         document.querySelector('.game-over').classList.add('hidden');
         this.newShape();
         this.update();
+    }
+    
+    // 修改播放音效的方法，添加错误处理和音量控制
+    playSound(soundName) {
+        if (this.soundEnabled && this.sounds[soundName]) {
+            try {
+                const sound = this.sounds[soundName];
+                sound.currentTime = 0;
+                sound.volume = 0.3; // 确保每次播放时音量都是30%
+                
+                const playPromise = sound.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log('音效播放失败:', error);
+                    });
+                }
+            } catch (error) {
+                console.log('音效系统错误:', error);
+            }
+        }
+    }
+
+    // 添加音量控制方法
+    setVolume(volume) {
+        const newVolume = Math.max(0, Math.min(1, volume)); // 确保音量在0-1之间
+        Object.values(this.sounds).forEach(sound => {
+            sound.volume = newVolume;
+        });
     }
 }
 

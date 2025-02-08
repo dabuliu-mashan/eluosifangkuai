@@ -2,25 +2,27 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>俄罗斯方块</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
-        <div class="header">
-            <div class="score-container">
-                <div class="score">分数: <span id="score">0</span></div>
-                <div class="level">等级: <span id="level">1</span></div>
-                <button id="rankBtn" class="rank-btn">排行榜</button>
+    <div class="game-wrapper">
+        <div class="game-container">
+            <div class="header">
+                <div class="score-container">
+                    <div class="score">分数: <span id="score">0</span></div>
+                    <div class="level">等级: <span id="level">1</span></div>
+                    <button id="rankBtn" class="rank-btn">排行榜</button>
+                </div>
             </div>
-        </div>
-        <canvas id="gameCanvas"></canvas>
-        <div class="controls">
-            <button id="leftBtn" class="round-btn">←</button>
-            <button id="dropBtn" class="round-btn">↓</button>
-            <button id="rightBtn" class="round-btn">→</button>
-            <button id="rotateBtn" class="round-btn">旋</button>
+            <canvas id="gameCanvas"></canvas>
+            <div class="controls">
+                <button id="leftBtn" class="round-btn">←</button>
+                <button id="dropBtn" class="round-btn">↓</button>
+                <button id="rightBtn" class="round-btn">→</button>
+                <button id="rotateBtn" class="round-btn">旋</button>
+            </div>
         </div>
         <div class="game-over hidden">
             <div class="game-over-content">
