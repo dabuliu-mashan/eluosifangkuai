@@ -266,8 +266,9 @@ canvas {
     :root {
         --game-width: 100vw;
         --game-height: 100vh;
-        --button-size: min(55px, calc(100vw / 6));
-        --info-width: 100%;
+        --button-size: min(45px, calc(100vw / 8));
+        --info-width: min(120px, calc(100vw * 0.25));
+        --gap-size: min(10px, calc(100vw * 0.02));
     }
 
     .game-container {
@@ -277,67 +278,70 @@ canvas {
     }
 
     .game-content {
-        flex-direction: column;
+        flex-direction: row;
+        gap: var(--gap-size);
     }
     
     .game-info {
-        background-color: transparent;
-        box-shadow: none;
+        width: var(--info-width);
         padding: 10px;
     }
     
     .info-section {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: center;
-        gap: calc(var(--gap-size) / 2);
-        width: 100%;
-    }
-
-    .info-item, .preview-section {
-        background-color: #f5f5f5;
+        flex-direction: column;
+        gap: calc(var(--gap-size) * 1.2);
     }
 
     .info-item {
-        flex: 1;
-        min-width: calc((100% - var(--gap-size) * 2) / 3);
-        align-items: center;
+        flex: 0 1 auto;
+        min-width: unset;
+        padding: 6px;
     }
     
     .preview-section {
-        order: -1;
-        width: 80px;
-        margin: 0;
+        order: 0;
+        width: 100%;
+        margin: auto 0;
     }
     
     .rank-btn {
-        width: auto;
-        margin: 0;
-        padding: 8px 15px;
+        width: 100%;
+        margin-top: auto;
+        padding: 6px 10px;
+        font-size: 0.9em;
     }
 
     .controls {
-        width: 100%;
-        justify-content: space-around;
-        margin-top: 10px;
+        width: calc(100% - var(--info-width) - var(--gap-size));
+        justify-content: center;
+        gap: calc(var(--gap-size) * 0.8);
+        margin: 5px 0;
     }
 
     canvas {
-        max-height: calc(100vh - 180px);
+        max-height: calc(100vh - 100px);
+    }
+
+    .info-item label {
+        font-size: min(0.9em, calc(var(--info-width) * 0.1));
+    }
+
+    .info-item span {
+        font-size: min(1.5em, calc(var(--info-width) * 0.18));
     }
 }
 
 /* 横屏模式适配 */
 @media (max-height: 600px) and (orientation: landscape) {
     :root {
-        --button-size: 40px;
-        --button-font-size: 1.2em;
+        --button-size: min(35px, calc(100vh / 8));
+        --button-font-size: 1em;
         --game-height: 97vh;
+        --info-width: min(100px, calc(100vw * 0.2));
     }
 
     .game-container {
-        padding: 8px;
+        padding: 5px;
         height: var(--game-height);
         margin-top: -50px;
     }
@@ -345,6 +349,7 @@ canvas {
     .game-content {
         flex-direction: row;
         height: 100%;
+        gap: var(--gap-size);
     }
 
     .controls {
@@ -359,15 +364,20 @@ canvas {
     .game-info {
         height: 100%;
         width: var(--info-width);
-    }
-
-    canvas {
-        max-height: 100vh;
-        width: auto;
+        padding: 8px;
     }
 
     .info-item {
-        font-size: 0.9em;
+        padding: 4px;
+    }
+
+    .preview-section {
+        padding: 6px;
+    }
+
+    .rank-btn {
+        padding: 4px 8px;
+        font-size: 0.8em;
     }
 }
 
@@ -381,33 +391,4 @@ canvas {
     .game-container {
         margin-top: -50px;
     }
-}
-
-/* 超小屏幕适配 */
-@media (max-width: 400px) {
-    :root {
-        --gap-size: 10px;
-    }
-
-    .game-container {
-        padding: 5px;
-    }
-
-    .info-item label {
-        font-size: 0.9em;
-    }
-
-    .info-item span {
-        font-size: 1.5em;
-    }
-
-    .preview-section {
-        width: 60px;
-    }
-
-    .rank-btn {
-        padding: 5px 10px;
-        font-size: 0.9em;
-    }
-} 
 } 
