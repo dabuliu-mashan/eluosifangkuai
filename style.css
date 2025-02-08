@@ -30,22 +30,15 @@ body {
 .score-container {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 10px;
     font-size: 1.2em;
     font-weight: bold;
 }
 
-.skill-container {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.skill-btn {
-    flex: 1;
-    padding: 10px;
-    font-size: 1em;
+.rank-btn {
+    padding: 5px 10px;
+    font-size: 0.9em;
     background-color: #2196F3;
     color: white;
     border: none;
@@ -53,12 +46,7 @@ body {
     cursor: pointer;
 }
 
-.skill-btn:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-.skill-btn:active:not(:disabled) {
+.rank-btn:active {
     background-color: #1976D2;
 }
 
@@ -72,14 +60,15 @@ canvas {
 .controls {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 30px;
     margin-top: 20px;
+    padding: 10px;
 }
 
 .round-btn {
-    width: 60px;
-    height: 60px;
-    font-size: 1.5em;
+    width: 80px;
+    height: 80px;
+    font-size: 2em;
     border: none;
     background-color: #4CAF50;
     color: white;
@@ -90,14 +79,16 @@ canvas {
     justify-content: center;
     align-items: center;
     padding: 0;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 .round-btn:active {
     background-color: #45a049;
     transform: scale(0.95);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.game-over {
+.game-over, .leaderboard-modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -110,7 +101,7 @@ canvas {
     z-index: 1000;
 }
 
-.game-over-content {
+.game-over-content, .leaderboard-content {
     background-color: white;
     padding: 20px;
     border-radius: 10px;
@@ -141,7 +132,7 @@ canvas {
     margin-bottom: 10px;
 }
 
-#leaderboardList {
+#leaderboardList, #leaderboardListModal {
     max-height: 200px;
     overflow-y: auto;
     border: 1px solid #eee;
@@ -149,13 +140,28 @@ canvas {
     border-radius: 5px;
 }
 
-#leaderboardList div {
-    padding: 5px;
+#leaderboardList div, #leaderboardListModal div {
+    padding: 8px;
     border-bottom: 1px solid #eee;
+    font-size: 1.1em;
 }
 
-#leaderboardList div:last-child {
+#leaderboardList div:last-child, #leaderboardListModal div:last-child {
     border-bottom: none;
+}
+
+#closeRankBtn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#closeRankBtn:active {
+    background-color: #45a049;
 }
 
 @media (max-width: 500px) {
@@ -164,8 +170,8 @@ canvas {
     }
 
     .round-btn {
-        width: 50px;
-        height: 50px;
-        font-size: 1.2em;
+        width: 70px;
+        height: 70px;
+        font-size: 1.8em;
     }
 } 

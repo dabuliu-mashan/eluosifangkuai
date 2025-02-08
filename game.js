@@ -10,9 +10,6 @@ class Tetris {
         
         this.score = 0;
         this.level = 1;
-        this.basePoints = 1; // 基础分数
-        this.clearAllAvailable = true; // 清屏技能是否可用
-        this.clearAllThreshold = 1000; // 清屏技能所需分数
         this.gameOver = false;
         this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
         
@@ -48,9 +45,9 @@ class Tetris {
         document.getElementById('rotateBtn').addEventListener('click', () => this.rotate());
         document.getElementById('dropBtn').addEventListener('click', () => this.moveDown());
         document.getElementById('restartBtn').addEventListener('click', () => this.restart());
-        document.getElementById('levelUpBtn').addEventListener('click', () => this.levelUp());
-        document.getElementById('clearAllBtn').addEventListener('click', () => this.clearAll());
         document.getElementById('saveScoreBtn').addEventListener('click', () => this.saveScore());
+        document.getElementById('rankBtn').addEventListener('click', () => this.showLeaderboard());
+        document.getElementById('closeRankBtn').addEventListener('click', () => this.hideLeaderboard());
         
         // 键盘控制
         document.addEventListener('keydown', (e) => {
@@ -68,16 +65,44 @@ class Tetris {
                 case 'ArrowDown':
                     this.moveDown();
                     break;
-                case 'a':
-                case 'A':
-                    this.levelUp();
-                    break;
-                case 'b':
-                case 'B':
-                    this.clearAll();
-                    break;
             }
         });
+    }
+    
+    showLeaderboard() {
+        document.querySelector('.leaderboard-modal').classList.remove('hidden');
+        this.updateLeaderboardModal();
+    }
+    
+    hideLeaderboard() {
+        document.querySelector('.leaderboard-modal').classList.add('hidden');
+    }
+    
+    updateLeaderboardModal() {
+        const leaderboard = JSON.parse(localStorage.getItem('tetrisLeaderboard') || '[]');
+        const leaderboardList = document.getElementById('leaderboardListModal');
+        leaderboardList.innerHTML = '';
+        
+        leaderboard.sort((a, b) => b.score - a.score)
+            .slice(0, 10)
+            .forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.textContent = `${index + 1}. ${entry.name}: ${entry.score}分`;
+                leaderboardList.appendChild(div);
+            });
+    }
+    
+    updateScore(lines) {
+        const points = [40, 100, 300, 1200]; // 消行基础分数
+        this.score += points[lines - 1] * this.level;
+        document.getElementById('score').textContent = this.score;
+        
+        // 自动升级
+        if (this.score > this.level * 1000) {
+            this.level++;
+            document.getElementById('level').textContent = this.level;
+            this.dropInterval = Math.max(100, 1000 - (this.level - 1) * 50);
+        }
     }
     
     newShape() {
@@ -172,18 +197,6 @@ class Tetris {
         }
     }
     
-    updateScore(lines) {
-        const points = [40, 100, 300, 1200]; // 基础消行分数
-        const earnedPoints = points[lines - 1] * this.basePoints;
-        this.score += earnedPoints;
-        document.getElementById('score').textContent = this.score;
-        
-        // 检查是否可以使用清屏技能
-        if (this.score >= this.clearAllThreshold && this.clearAllAvailable) {
-            document.getElementById('clearAllBtn').disabled = false;
-        }
-    }
-    
     draw() {
         this.ctx.fillStyle = '#000';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -227,26 +240,6 @@ class Tetris {
             
             this.draw();
             requestAnimationFrame(this.update.bind(this));
-        }
-    }
-    
-    levelUp() {
-        if (this.score >= this.level * 100) { // 升级所需分数
-            this.level++;
-            this.basePoints = this.level; // 基础分数随等级提升
-            this.dropInterval = Math.max(100, 1000 - (this.level - 1) * 50);
-            document.getElementById('level').textContent = this.level;
-        }
-    }
-    
-    clearAll() {
-        if (this.score >= this.clearAllThreshold && this.clearAllAvailable) {
-            // 清除所有方块
-            this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
-            this.score += 500; // 使用清屏技能奖励分数
-            document.getElementById('score').textContent = this.score;
-            this.clearAllAvailable = false;
-            document.getElementById('clearAllBtn').disabled = true;
         }
     }
     
@@ -295,13 +288,10 @@ class Tetris {
         this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
         this.score = 0;
         this.level = 1;
-        this.basePoints = 1;
-        this.clearAllAvailable = true;
         this.gameOver = false;
         this.dropInterval = 1000;
         document.getElementById('score').textContent = '0';
         document.getElementById('level').textContent = '1';
-        document.getElementById('clearAllBtn').disabled = true;
         document.getElementById('saveScoreBtn').disabled = false;
         document.getElementById('playerName').value = '';
         document.querySelector('.game-over').classList.add('hidden');

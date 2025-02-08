@@ -12,10 +12,7 @@
             <div class="score-container">
                 <div class="score">分数: <span id="score">0</span></div>
                 <div class="level">等级: <span id="level">1</span></div>
-            </div>
-            <div class="skill-container">
-                <button id="levelUpBtn" class="skill-btn">A键<br>升级</button>
-                <button id="clearAllBtn" class="skill-btn" disabled>B键<br>清屏</button>
+                <button id="rankBtn" class="rank-btn">排行榜</button>
             </div>
         </div>
         <canvas id="gameCanvas"></canvas>
@@ -36,6 +33,13 @@
                     <h3>排行榜</h3>
                     <div id="leaderboardList"></div>
                 </div>
+            </div>
+        </div>
+        <div class="leaderboard-modal hidden">
+            <div class="leaderboard-content">
+                <h3>排行榜</h3>
+                <div id="leaderboardListModal"></div>
+                <button id="closeRankBtn">关闭</button>
             </div>
         </div>
     </div>
