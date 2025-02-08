@@ -64,37 +64,11 @@ class Tetris {
         this.soundEnabled = true;
         this.soundBuffers = {};
         
-        try {
-            window.AudioContext = window.AudioContext || window.webkitAudioContext;
-            this.audioContext = new AudioContext();
-            
-            // 确保音频上下文在页面加载时是运行状态
-            if (this.audioContext.state === 'suspended') {
-                this.audioContext.resume();
-            }
-            
-            // 监听页面可见性变化
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden) {
-                    this.audioContext?.suspend();
-                } else if (this.soundEnabled) {
-                    this.audioContext?.resume();
-                }
-            });
-            
-            // 添加触摸事件监听，以确保在移动设备上可以播放声音
-            document.addEventListener('touchstart', () => {
-                if (this.audioContext?.state === 'suspended') {
-                    this.audioContext.resume();
-                }
-            }, { once: true });
-            
-        } catch (e) {
-            console.log('Web Audio API不支持');
-        }
-
+        // 优化音频初始化
+        this.initAudio();
+        
         this.sounds = {
-            move: new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAEAAABVgANTU1NTU1Q0NDQ0NDUFBQUFBQXl5eXl5ea2tra2tra3l5eXl5eYaGhoaGhpSUlJSUlKGhoaGhoaGvr6+vr6+8vLy8vLzKysrKysrX19fX19fX5eXl5eXl8vLy8vLy////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCgAAAAAAAAAVY82AhbwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/+MYxAALACwAAP/AADwQKVE9YWDGPkQWpT66yk4+zIiYPoTUaT3tnU+NFxkYmC4T/f+g4NDFY8T1/GNYxb/ZYs5jF8Y5j/+MYxA8L0DU0A/+AACZNG5/2Z+zzXzRD/51h6P4hGAGKDGQGJpJbZ6w8rx/H8X1TRP5p5PvX/Pc//f1TdwlACApwgDf/+MYxBoK4DVpQP8iAtYYjKhhiGhkHoYHQkxkQwxMxhiGhkHoYHQuxAAAAA0ATuc4EQwBoAL4AFwABQABEQAAA0AE/+MYxB4LGDVMAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB'),
+            move: new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAEAAABVgANTU1NTU1Q0NDQ0NDUFBQUFBQXl5eXl5ea2tra2tra3l5eXl5eYaGhoaGhpSUlJSUlKGhoaGhoaGvr6+vr6+8vLy8vLzKysrKysrX19fX19fX5eXl5eXl8vLy8vLy////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCgAAAAAAAAAVY82AhbwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/+MYxAALACwAAP/AADwQKVE9YWDGPkQWpT66yk4+zIiYPoTUaT3tnU+NFxkYmC4T/f+g4NDFY8T1/GNYxb/ZYs5jF8Y5j/+MYxA8L0DU0A/+AACZNG5/2Z+zzXzRD/51h6P4hGAGKDGQGJpJbZ6w8rx/H8X1TRP5p5PvX/Pc//f1TdwlACApwgDf/+MYxBoK4DVpQP8iAtYYjKhhiGhkHoYHQkxkQwxMxhiGhkHoYHQuxAAAAA0ATuc4EQwBoAL4AFwABQABEQAAA0AE/+MYxB4LGDVMAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB'),
             rotate: new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAEAAABVgANTU1NTU1Q0NDQ0NDUFBQUFBQXl5eXl5ea2tra2tra3l5eXl5eYaGhoaGhpSUlJSUlKGhoaGhoaGvr6+vr6+8vLy8vLzKysrKysrX19fX19fX5eXl5eXl8vLy8vLy////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCgAAAAAAAAAVY82AhbwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/+MYxAALACwAAP/AADwQKVE9YWDGPkQWpT66yk4+zIiYPoTUaT3tnU+NFxkYmC4T/f+g4NDFY8T1/GNYxb/ZYs5jF8Y5j/+MYxA8L0DU0A/+AACZNG5/2Z+zzXzRD/51h6P4hGAGKDGQGJpJbZ6w8rx/H8X1TRP5p5PvX/Pc//f1TdwlACApwgDf/+MYxBoK4DVpQP8iAtYYjKhhiGhkHoYHQkxkQwxMxhiGhkHoYHQuxAAAAA0ATuc4EQwBoAL4AFwABQABEQAAA0AE/+MYxB4LGDVMAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB'),
             drop: new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAEAAABVgANTU1NTU1Q0NDQ0NDUFBQUFBQXl5eXl5ea2tra2tra3l5eXl5eYaGhoaGhpSUlJSUlKGhoaGhoaGvr6+vr6+8vLy8vLzKysrKysrX19fX19fX5eXl5eXl8vLy8vLy////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCgAAAAAAAAAVY82AhbwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/+MYxAALACwAAP/AADwQKVE9YWDGPkQWpT66yk4+zIiYPoTUaT3tnU+NFxkYmC4T/f+g4NDFY8T1/GNYxb/ZYs5jF8Y5j/+MYxA8L0DU0A/+AACZNG5/2Z+zzXzRD/51h6P4hGAGKDGQGJpJbZ6w8rx/H8X1TRP5p5PvX/Pc//f1TdwlACApwgDf/+MYxBoK4DVpQP8iAtYYjKhhiGhkHoYHQkxkQwxMxhiGhkHoYHQuxAAAAA0ATuc4EQwBoAL4AFwABQABEQAAA0AE/+MYxB4LGDVMAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB'),
             clear: new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAEAAABVgANTU1NTU1Q0NDQ0NDUFBQUFBQXl5eXl5ea2tra2tra3l5eXl5eYaGhoaGhpSUlJSUlKGhoaGhoaGvr6+vr6+8vLy8vLzKysrKysrX19fX19fX5eXl5eXl8vLy8vLy////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCgAAAAAAAAAVY82AhbwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/+MYxAALACwAAP/AADwQKVE9YWDGPkQWpT66yk4+zIiYPoTUaT3tnU+NFxkYmC4T/f+g4NDFY8T1/GNYxb/ZYs5jF8Y5j/+MYxA8L0DU0A/+AACZNG5/2Z+zzXzRD/51h6P4hGAGKDGQGJpJbZ6w8rx/H8X1TRP5p5PvX/Pc//f1TdwlACApwgDf/+MYxBoK4DVpQP8iAtYYjKhhiGhkHoYHQkxkQwxMxhiGhkHoYHQuxAAAAA0ATuc4EQwBoAL4AFwABQABEQAAA0AE/+MYxB4LGDVMAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB/+MYxCoLCDVEAP8iAtYIAP/Q+yL/I+BRMCSD/P8VwBUAFMAOgAz//5cBYAL4AFwABQABEQAAA0AE8AEUAEIABgAB'),
@@ -127,6 +101,41 @@ class Tetris {
         this.generateNextShape(); // 生成第一个预览方块
         this.newShape();         // 生成当前方块
         this.update();
+    }
+    
+    initAudio() {
+        try {
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.audioContext = new AudioContext();
+            
+            // 添加全局触摸事件监听器来初始化音频
+            const initAudioContext = () => {
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+                // 预加载所有音效
+                Object.values(this.sounds).forEach(sound => {
+                    sound.load();
+                });
+            };
+            
+            // 监听多种用户交互事件来初始化音频
+            ['touchstart', 'touchend', 'click', 'keydown'].forEach(event => {
+                document.addEventListener(event, initAudioContext, { once: true });
+            });
+            
+            // 监听页面可见性变化
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    this.audioContext?.suspend();
+                } else if (this.soundEnabled) {
+                    this.audioContext?.resume();
+                }
+            });
+            
+        } catch (e) {
+            console.log('Web Audio API不支持:', e);
+        }
     }
     
     bindControls() {
@@ -588,39 +597,32 @@ class Tetris {
     
     // 修改播放音效的方法
     playSound(soundName) {
-        if (!this.soundEnabled || !this.sounds[soundName] || !this.audioContext) return;
+        if (!this.soundEnabled || !this.sounds[soundName]) return;
         
         try {
             const sound = this.sounds[soundName];
             
-            // 如果音频上下文被暂停，尝试恢复
-            if (this.audioContext.state === 'suspended') {
-                this.audioContext.resume().then(() => {
-                    this.playSoundWithRetry(sound);
+            // 确保音频已加载
+            if (sound.readyState < 2) {
+                sound.load();
+            }
+            
+            // 重置音频位置并播放
+            sound.currentTime = 0;
+            
+            const playPromise = sound.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    if (error.name === 'NotAllowedError') {
+                        // 如果是权限问题，尝试恢复音频上下文
+                        this.audioContext?.resume().then(() => {
+                            sound.play().catch(e => console.log('音频播放失败:', e));
+                        });
+                    }
                 });
-            } else {
-                this.playSoundWithRetry(sound);
             }
         } catch (error) {
             console.log('音效播放失败:', error);
-        }
-    }
-
-    playSoundWithRetry(sound, retryCount = 0) {
-        if (retryCount >= 3) return; // 最多重试3次
-        
-        sound.currentTime = 0;
-        const playPromise = sound.play();
-        
-        if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                console.log('音效播放错误，尝试重试:', error);
-                if (error.name === 'NotAllowedError' && retryCount < 3) {
-                    setTimeout(() => {
-                        this.playSoundWithRetry(sound, retryCount + 1);
-                    }, 100);
-                }
-            });
         }
     }
 

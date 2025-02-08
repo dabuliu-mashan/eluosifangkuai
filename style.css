@@ -265,69 +265,73 @@ canvas {
 @media (max-width: 600px) {
     :root {
         --game-width: 100vw;
-        --game-height: 100vh;
-        --button-size: min(45px, calc(100vw / 8));
-        --info-width: min(120px, calc(100vw * 0.25));
-        --gap-size: min(10px, calc(100vw * 0.02));
+        --game-height: 85vh;
+        --button-size: min(60px, calc(100vw / 6));
+        --info-width: min(130px, calc(100vw * 0.28));
+        --gap-size: min(12px, calc(100vw * 0.02));
     }
 
     .game-container {
-        padding: 8px;
+        padding: 10px;
         padding-bottom: 5px;
-        margin-top: -100px;
+        margin-top: -50px;
+        height: var(--game-height);
+        align-items: flex-start;
     }
 
     .game-content {
         flex-direction: row;
         gap: var(--gap-size);
+        height: calc(100% - var(--button-size) - 20px);
+        align-items: flex-start;
+    }
+    
+    .game-main {
+        height: 100%;
+        align-items: flex-start;
     }
     
     .game-info {
+        height: 100%;
         width: var(--info-width);
         padding: 10px;
+        display: flex;
+        flex-direction: column;
     }
     
     .info-section {
         flex-direction: column;
         gap: calc(var(--gap-size) * 1.2);
+        height: 100%;
     }
 
     .info-item {
-        flex: 0 1 auto;
-        min-width: unset;
-        padding: 6px;
+        padding: 8px;
     }
     
     .preview-section {
-        order: 0;
-        width: 100%;
+        padding: 8px;
         margin: auto 0;
     }
     
-    .rank-btn {
-        width: 100%;
-        margin-top: auto;
-        padding: 6px 10px;
-        font-size: 0.9em;
-    }
-
     .controls {
         width: calc(100% - var(--info-width) - var(--gap-size));
         justify-content: center;
-        gap: calc(var(--gap-size) * 0.8);
-        margin: 5px 0;
+        gap: calc(var(--gap-size) * 1.2);
+        margin-top: 10px;
+    }
+
+    .round-btn {
+        width: var(--button-size);
+        height: var(--button-size);
+        font-size: calc(var(--button-size) * 0.4);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
     canvas {
-        max-height: calc(100vh - 100px);
-    }
-
-    .info-item label {
-        font-size: min(0.9em, calc(var(--info-width) * 0.1));
-    }
-
-    .info-item span {
-        font-size: min(1.5em, calc(var(--info-width) * 0.18));
+        height: 100%;
+        width: auto;
+        max-height: unset;
     }
 }
 
