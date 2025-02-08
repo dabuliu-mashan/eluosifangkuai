@@ -34,8 +34,8 @@ class Tetris {
         this.lastTime = 0;
         
         this.moveInterval = null; // 用于存储持续移动的定时器
-        this.moveSpeed = 50; // 持续移动的间隔时间（毫秒）
-        this.downSpeed = 30; // 向下移动的间隔时间（毫秒）
+        this.moveSpeed = 60; // 持续移动的间隔时间（从50ms增加到60ms）
+        this.downSpeed = 35; // 向下移动的间隔时间（从30ms增加到35ms）
         
         this.bindControls();
         this.loadLeaderboard();
@@ -80,6 +80,13 @@ class Tetris {
         dropBtn.addEventListener('touchend', () => this.stopMoving());
         dropBtn.addEventListener('touchcancel', () => this.stopMoving());
         
+        // 旋转按钮的触摸事件
+        const rotateBtn = document.getElementById('rotateBtn');
+        rotateBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.rotate();
+        });
+        
         // 鼠标事件（用于电脑端）
         leftBtn.addEventListener('mousedown', (e) => {
             e.preventDefault();
@@ -93,13 +100,13 @@ class Tetris {
             e.preventDefault();
             this.startMoving('down');
         });
-        document.addEventListener('mouseup', () => this.stopMoving());
-        
-        // 其他按钮保持单击事件
-        document.getElementById('rotateBtn').addEventListener('click', (e) => {
+        rotateBtn.addEventListener('mousedown', (e) => {
             e.preventDefault();
             this.rotate();
         });
+        document.addEventListener('mouseup', () => this.stopMoving());
+        
+        // 其他按钮的事件
         document.getElementById('restartBtn').addEventListener('click', () => this.restart());
         document.getElementById('saveScoreBtn').addEventListener('click', () => this.saveScore());
         document.getElementById('rankBtn').addEventListener('click', () => this.showLeaderboard());
@@ -110,7 +117,9 @@ class Tetris {
             if (this.gameOver) return;
             
             // 如果已经在移动，不要重复开始
-            if (this.moveInterval) return;
+            if (this.moveInterval && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowDown')) {
+                return;
+            }
             
             switch(e.key) {
                 case 'ArrowLeft':
