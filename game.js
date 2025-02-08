@@ -35,6 +35,7 @@ class Tetris {
         
         this.moveInterval = null; // 用于存储持续移动的定时器
         this.moveSpeed = 50; // 持续移动的间隔时间（毫秒）
+        this.downSpeed = 30; // 向下移动的间隔时间（毫秒）
         
         this.bindControls();
         this.loadLeaderboard();
@@ -43,6 +44,15 @@ class Tetris {
     }
     
     bindControls() {
+        // 禁用所有按钮的默认长按行为
+        document.querySelectorAll('.round-btn').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => e.preventDefault());
+            btn.addEventListener('contextmenu', (e) => e.preventDefault());
+            btn.style.webkitTouchCallout = 'none';
+            btn.style.webkitUserSelect = 'none';
+            btn.style.userSelect = 'none';
+        });
+
         // 左按钮的触摸事件
         const leftBtn = document.getElementById('leftBtn');
         leftBtn.addEventListener('touchstart', (e) => {
@@ -61,14 +71,35 @@ class Tetris {
         rightBtn.addEventListener('touchend', () => this.stopMoving());
         rightBtn.addEventListener('touchcancel', () => this.stopMoving());
         
+        // 下按钮的触摸事件
+        const dropBtn = document.getElementById('dropBtn');
+        dropBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.startMoving('down');
+        });
+        dropBtn.addEventListener('touchend', () => this.stopMoving());
+        dropBtn.addEventListener('touchcancel', () => this.stopMoving());
+        
         // 鼠标事件（用于电脑端）
-        leftBtn.addEventListener('mousedown', () => this.startMoving('left'));
-        rightBtn.addEventListener('mousedown', () => this.startMoving('right'));
+        leftBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            this.startMoving('left');
+        });
+        rightBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            this.startMoving('right');
+        });
+        dropBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            this.startMoving('down');
+        });
         document.addEventListener('mouseup', () => this.stopMoving());
         
         // 其他按钮保持单击事件
-        document.getElementById('rotateBtn').addEventListener('click', () => this.rotate());
-        document.getElementById('dropBtn').addEventListener('click', () => this.moveDown());
+        document.getElementById('rotateBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.rotate();
+        });
         document.getElementById('restartBtn').addEventListener('click', () => this.restart());
         document.getElementById('saveScoreBtn').addEventListener('click', () => this.saveScore());
         document.getElementById('rankBtn').addEventListener('click', () => this.showLeaderboard());
@@ -92,14 +123,14 @@ class Tetris {
                     this.rotate();
                     break;
                 case 'ArrowDown':
-                    this.moveDown();
+                    this.startMoving('down');
                     break;
             }
         });
         
         // 键盘松开停止移动
         document.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowDown') {
                 this.stopMoving();
             }
         });
@@ -113,19 +144,24 @@ class Tetris {
             this.moveLeft();
         } else if (direction === 'right') {
             this.moveRight();
+        } else if (direction === 'down') {
+            this.moveDown();
         }
         
         // 清除可能存在的之前的定时器
         this.stopMoving();
         
         // 设置持续移动
+        const speed = direction === 'down' ? this.downSpeed : this.moveSpeed;
         this.moveInterval = setInterval(() => {
             if (direction === 'left') {
                 this.moveLeft();
             } else if (direction === 'right') {
                 this.moveRight();
+            } else if (direction === 'down') {
+                this.moveDown();
             }
-        }, this.moveSpeed);
+        }, speed);
     }
     
     stopMoving() {
